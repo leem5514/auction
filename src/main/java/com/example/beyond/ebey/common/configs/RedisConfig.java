@@ -1,42 +1,54 @@
 package com.example.beyond.ebey.common.configs;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisConfig {
-    // application.yml 의 spring.redis.host 의 정보를 가져옴.
+
     @Value("${spring.redis.host}")
-    public String host;
+    private String host;
 
     @Value("${spring.redis.port}")
-    public int port;
+    private int port;
 
     @Bean
-    @Qualifier("2")
     public RedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setHostName(host);
-        configuration.setPort(port);
-        configuration.setDatabase(1);
-        return new LettuceConnectionFactory(configuration);
+        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
+        redisStandaloneConfiguration.setHostName(host);
+        redisStandaloneConfiguration.setPort(port);
+        LettuceConnectionFactory lettuceConnectionFactory = new LettuceConnectionFactory(redisStandaloneConfiguration);
+        return lettuceConnectionFactory;
     }
 
     @Bean
-    @Qualifier("2")
-    public RedisTemplate<String, Object> redisTemplate(@Qualifier("2") RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory){
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         redisTemplate.setConnectionFactory(redisConnectionFactory);
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer()); // value 값 json 변환
+        redisTemplate.setDefaultSerializer(new GenericJackson2JsonRedisSerializer()); // 실패시에도 json
+
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer()); // 직렬화 진행
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());  // 직렬화 진행
         return redisTemplate;
     }
+
+    @Bean
+    public RedisMessageListenerContainer redisContainer() {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(redisConnectionFactory());
+        return container;
+    }
+
 }

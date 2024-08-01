@@ -18,19 +18,12 @@ public class Member extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(length = 50, nullable = false)
-    private String username;
-
-    @Column(length = 255, nullable = false)
-    private String password;
-
-    @Column(length = 100, unique = true)
+    @Column(unique = true)
     private String email;
 
-    private int age;
+    private String username;
 
-    private String imagePath;
+    private String password;
 
     private Role role;
 
